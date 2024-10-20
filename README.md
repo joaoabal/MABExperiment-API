@@ -3,6 +3,52 @@
 
 This project utilizes **Docker**, **RestfulAPI**, **SQL Database** and **MAB Algorithm**  for data transformation and analysis. The following instructions will guide you through setting up your environment and running the project.
 
+
+
+### Estrutura do Projeto
+
+```bash
+MABExperiment-API/
+├── app/
+│   ├── app.py              # Arquivo principal da aplicação Flask
+│   ├── routes.py           # Rotas que definem os endpoints da API
+│   ├── config.py           # Configurações da aplicação, incluindo conexões de banco de dados
+│   └── __init__.py         # Inicialização da aplicação Flask
+├── data_input.py           # Script que insere dados no banco de dados para os experimentos
+├── docker-compose.yml      # Arquivo de configuração Docker para a aplicação e PostgreSQL
+├── Dockerfile              # Dockerfile para construir a imagem da API
+├── requirements.txt        # Dependências do projeto
+└── schema.sql              # Script SQL para criar as tabelas no banco de dados
+```
+
+O fluxograma abaixo ilustra o fluxo de dados entre os componentes da API MABExperiment:
+
+
+![Fluxograma do MABExperiment-API](./fluxograma.png)
+
+
+### Endpoints da API
+
+Aqui estão os principais endpoints da API:
+
+- `POST /experiments`: Cria um novo experimento.
+- `POST /experiments/<experiment_id>/variants`: Adiciona variantes ao experimento.
+- `POST /experiment_data`: Insere dados de impressões e cliques para uma variante.
+- `POST /allocations`: Calcula e salva a alocação de tráfego entre as variantes.
+- `GET /allocations/<experiment_id>`: Retorna as alocações mais recentes para um experimento.
+
+Você pode utilizar ferramentas como **Postman** ou **cURL** para interagir com esses endpoints.
+
+### Inserindo Dados no Banco com `data_input.py`
+
+O script `data_input.py` é utilizado para inserir dados de variantes em um experimento específico. Ele gera registros aleatórios de impressões e cliques, que são enviados para o banco de dados via API.
+
+Para executá-lo, basta rodar o seguinte comando:
+
+```bash
+python data_input.py
+```
+
 ## Getting Started
 
 ### 1. Install Docker
@@ -105,16 +151,3 @@ If you make changes to the Dockerfile or `docker-compose.yml`, you may need to r
 docker-compose up --build
 ```
 
-
-
-MABExperiment-API/
-├── app/
-│   ├── app.py
-│   ├── routes.py
-│   ├── config.py
-│   └── __init__.py
-├── data_input.py
-├── docker-compose.yml
-├── Dockerfile
-├── requirements.txt
-└── schema.sql
