@@ -79,13 +79,23 @@ sudo docker-compose up --build
 
 This command will start both the dbt container and the PostgreSQL container as specified in the `docker-compose.yml`.
 
+---- FALAR SOBRE MIGRATION -> foi atumatizada.
+
+sudo docker-compose exec mab-api flask db init
+sudo docker-compose exec mab-api flask db migrate -m "Initial migration."
+
+---- falar sobre data_input.py que insere os dados no banco
+
+---- falar sobre os endpoints
+
 ### 4. Additional commands
 
 #### Stopping containers
 To stop the running containers, execute:
 
 ```bash
-docker-compose down
+sudo docker-compose down
+sudo docker volume rm mab-api_postgres_data
 ```
 
 #### Rebuilding containers
@@ -95,3 +105,16 @@ If you make changes to the Dockerfile or `docker-compose.yml`, you may need to r
 docker-compose up --build
 ```
 
+
+
+MABExperiment-API/
+├── app/
+│   ├── app.py
+│   ├── routes.py
+│   ├── config.py
+│   └── __init__.py
+├── data_input.py
+├── docker-compose.yml
+├── Dockerfile
+├── requirements.txt
+└── schema.sql
