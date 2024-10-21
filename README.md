@@ -3,6 +3,16 @@
 
 This project utilizes **Docker**, **RestfulAPI**, **SQL Database** and **MAB Algorithm**  for data transformation and analysis. The following instructions will guide you through setting up your environment and running the project.
 
+### Project Idea
+
+Thompson Sampling is a probabilistic algorithm used in A/B testing and Multi-Armed Bandit problems to dynamically allocate traffic between different variants based on their observed performance. The algorithm models the uncertainty of each variant's performance using a Beta distribution, which takes the number of clicks (successes) and non-clicks (failures) as inputs.
+
+For each variant, Thompson Sampling draws a random sample from its Beta distribution, where the shape of the distribution is determined by the ratio of clicks to non-clicks. The variant with the highest sampled value is selected to receive more traffic in the next iteration. This approach balances exploration (testing underperforming variants) and exploitation (favoring the better-performing variant).
+
+The plot below shows how the Beta distribution evolves with different combinations of clicks and non-clicks. As the number of clicks increases, the distribution becomes sharper and more confident about the true CTR (Click-Through Rate), shifting towards higher probabilities.
+
+![Beta Distribution](./beta_distribution.png)
+
 ### Project Structure
 
 ```bash
@@ -14,6 +24,7 @@ MABExperiment-API/
 │   ├── config.py           # Application configurations, including database connections
 │   ├── db_connection.py    # Database connection function
 │   └── __init__.py         # Initialization of the Flask application
+├── analytics.ipynb         # Script that plots the data
 ├── data_input.py           # Script that inserts data into the database for the experiments
 ├── docker-compose.yml      # Docker configuration file for the application and PostgreSQL
 ├── Dockerfile              # Dockerfile to build the API image
@@ -28,6 +39,7 @@ The flowchart below illustrates the data flow between the components of the MABE
 
 
 ![Fluxograma do MABExperiment-API](./fluxograma.png)
+
 
 
 ### API Endpoints 

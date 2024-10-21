@@ -1,15 +1,13 @@
 from flask import Blueprint, request, jsonify
-from db_connection import get_db_connection  # Importa de db_connection.py
+from db_connection import get_db_connection  
 from datetime import datetime
 import numpy as np
-from scipy.stats import beta
 
 main = Blueprint('main', __name__)
 
 @main.route('/')
 def index():
     return "API is running!"
-
 
 # insere os dados dos experimentos
 @main.route('/experiment_data', methods=['POST'])
@@ -33,7 +31,7 @@ def add_experiment_data():
             cur.close()
             return jsonify({"error": "Missing data in one of the records"}), 400
 
-        # Valida e converte o timestamp
+        # Validacao e convercao do timestamp
         try:
             timestamp = datetime.strptime(item['timestamp'], '%Y-%m-%d %H:%M:%S')
         except ValueError:
@@ -41,11 +39,11 @@ def add_experiment_data():
             cur.close()
             return jsonify({"error": "timestamp format should be YYYY-MM-DD HH:MM:SS"}), 400
 
-        name = item['name']  # Nome da variante
+        name = item['name']
         impressions = item['impressions']
         clicks = item['clicks']
 
-        # Inserir dados diretamente na tabela experiment_data
+        # Insercao dos dados diretamente na tabela experiment_data
         try:
             cur.execute("""
                 INSERT INTO experiment_data (name, timestamp, impressions, clicks)
@@ -71,12 +69,13 @@ def add_experiment_data():
     return jsonify({"message": f"{len(records)} records added successfully"}), 201
 
 
+
 @main.route('/allocations', methods=['POST'])
 def calculate_and_save_allocations():
     data = request.get_json()
 
     # Verificar se os campos necessários estão presentes
-    if not all(k in data for k in ("variant_names", "start_date", "end_date")):
+    if not all(campos in data for campos in ("variant_names", "start_date", "end_date")):
         return jsonify({"error": "variant_names, start_date, and end_date are required"}), 400
 
     variant_names = data['variant_names']
@@ -86,7 +85,7 @@ def calculate_and_save_allocations():
     conn = get_db_connection()
     cur = conn.cursor()
 
-    # Obter dados agregados de impressões e cliques para as variantes dentro do intervalo
+    # Obter dados agregados de impressões e cliques para as variantes dentro do intervalo de tempo escolhido
     cur.execute("""
         SELECT
             ed.name AS variant_name,
@@ -145,6 +144,8 @@ def calculate_and_save_allocations():
         "start_date": start_date,
         "end_date": end_date
     }), 201
+
+
 
 @main.route('/allocations', methods=['GET'])
 def get_allocations():
