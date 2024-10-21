@@ -10,157 +10,13 @@ main = Blueprint('main', __name__)
 def index():
     return "API is running!"
 
-def calculate_allocation(experiment_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
 
-    # Obter as variantes associadas ao experimento
-    cur.execute("""
-        SELECT v.name
-        FROM variants v
-        WHERE v.experiment_id = %s
-    """, (experiment_id,))
-    
-    variant_names = cur.fetchall()
-    variant_names = [row[0] for row in variant_names]  # Extraindo os nomes das variantes
-
-    if not variant_names:
-        conn.close()
-        return {}
-
-    # Obter dados agregados de impressões e cliques para cada variante em experiment_data
-    cur.execute(f"""
-        SELECT
-            ed.name AS variant_name,
-            SUM(ed.impressions) AS total_impressions,
-            SUM(ed.clicks) AS total_clicks
-        FROM
-            experiment_data ed
-        WHERE
-            ed.name IN %s
-        GROUP BY
-            ed.name;
-    """, (tuple(variant_names),))
-
-    results = cur.fetchall()
-    conn.close()
-
-    if not results:
-        return {}
-
-    samples = []
-    variant_names_list = []
-    for row in results:
-        variant_name, impressions, clicks = row
-        alpha = clicks + 1
-        beta_param = (impressions - clicks) + 1
-        sample = np.random.beta(alpha, beta_param)
-        samples.append(sample)
-        variant_names_list.append(variant_name)
-
-    # Calcular alocação proporcional
-    total = sum(samples)
-    allocations = {variant_names_list[i]: round((samples[i] / total) * 100, 2) for i in range(len(samples))}
-
-    return allocations
-
-# registra o experimento a ser realizado
-@main.route('/experiments', methods=['POST'])
-def create_experiment():
-    data = request.get_json()
-
-    if 'name' not in data:
-        return jsonify({"error": "Experiment name is required"}), 400
-
-    name = data['name']
-    start_date_str = data.get('start_date')
-    end_date_str = data.get('end_date')
-
-    if start_date_str:
-        try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-        except ValueError:
-            return jsonify({"error": "start_date format should be YYYY-MM-DD"}), 400
-    else:
-        start_date = datetime.utcnow()
-
-    if end_date_str:
-        try:
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-        except ValueError:
-            return jsonify({"error": "end_date format should be YYYY-MM-DD"}), 400
-    else:
-        end_date = None
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    try:
-        cur.execute("""
-            INSERT INTO experiments (name, start_date, end_date)
-            VALUES (%s, %s, %s)
-            RETURNING experiment_id
-        """, (name, start_date, end_date))
-        experiment_id = cur.fetchone()[0]
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        cur.close()
-        conn.close()
-        return jsonify({"error": str(e)}), 500
-
-    cur.close()
-    conn.close()
-
-    return jsonify({
-        "message": "Experiment created successfully",
-        "experiment_id": experiment_id
-    }), 201
-
-#registra as variantes relacionadas a experimentos cadastrados
-@main.route('/experiments/<int:experiment_id>/variants', methods=['POST'])
-def create_variant(experiment_id):
-    data = request.get_json()
-
-    if 'name' not in data:
-        return jsonify({"error": "Variant name is required"}), 400
-
-    variant_name = data['name']
-
-    conn = get_db_connection()
-    cur = conn.cursor()
-
-    cur.execute("SELECT experiment_id FROM experiments WHERE experiment_id = %s", (experiment_id,))
-    experiment = cur.fetchone()
-    if not experiment:
-        cur.close()
-        conn.close()
-        return jsonify({"error": "Experiment not found"}), 404
-
-    try:
-        cur.execute("""
-            INSERT INTO variants (experiment_id, name)
-            VALUES (%s, %s)
-        """, (experiment_id, variant_name))
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        cur.close()
-        conn.close()
-        return jsonify({"error": str(e)}), 500
-
-    cur.close()
-    conn.close()
-
-    return jsonify({
-        "message": "Variant created successfully"
-    }), 201
-
-#insere os dados dos experimentos
+# insere os dados dos experimentos
 @main.route('/experiment_data', methods=['POST'])
 def add_experiment_data():
     data = request.get_json()
 
+    # Verifica se data é uma lista (múltiplos registros)
     if isinstance(data, list):
         records = data
     else:
@@ -170,12 +26,14 @@ def add_experiment_data():
     cur = conn.cursor()
 
     for item in records:
-        required_fields = {"timestamp", "name", "impressions", "clicks", "experiment_id"}
+        # Verificação dos campos obrigatórios
+        required_fields = {"timestamp", "name", "impressions", "clicks"}
         if not required_fields.issubset(item):
             conn.rollback()
             cur.close()
             return jsonify({"error": "Missing data in one of the records"}), 400
 
+        # Valida e converte o timestamp
         try:
             timestamp = datetime.strptime(item['timestamp'], '%Y-%m-%d %H:%M:%S')
         except ValueError:
@@ -183,20 +41,11 @@ def add_experiment_data():
             cur.close()
             return jsonify({"error": "timestamp format should be YYYY-MM-DD HH:MM:SS"}), 400
 
-        experiment_id = item['experiment_id']
-        name = item['name']
+        name = item['name']  # Nome da variante
         impressions = item['impressions']
         clicks = item['clicks']
 
-        cur.execute("""
-            SELECT name FROM variants WHERE experiment_id = %s AND name = %s
-        """, (experiment_id, name))
-        variant = cur.fetchone()
-        if not variant:
-            conn.rollback()
-            cur.close()
-            return jsonify({"error": f"Variant {name} not found for experiment {experiment_id}"}), 404
-
+        # Inserir dados diretamente na tabela experiment_data
         try:
             cur.execute("""
                 INSERT INTO experiment_data (name, timestamp, impressions, clicks)
@@ -207,6 +56,7 @@ def add_experiment_data():
             cur.close()
             return jsonify({"error": str(e)}), 500
 
+    # Commit das mudanças no banco de dados
     try:
         conn.commit()
     except Exception as e:
@@ -214,6 +64,7 @@ def add_experiment_data():
         cur.close()
         return jsonify({"error": str(e)}), 500
 
+    # Fechar conexões
     cur.close()
     conn.close()
 
@@ -221,39 +72,62 @@ def add_experiment_data():
 
 
 @main.route('/allocations', methods=['POST'])
-def save_allocations():
+def calculate_and_save_allocations():
     data = request.get_json()
 
-    if 'experiment_id' not in data:
-        return jsonify({"error": "experiment_id is required"}), 400
+    # Verificar se os campos necessários estão presentes
+    if not all(k in data for k in ("variant_names", "start_date", "end_date")):
+        return jsonify({"error": "variant_names, start_date, and end_date are required"}), 400
 
-    experiment_id = data['experiment_id']
+    variant_names = data['variant_names']
+    start_date = data['start_date']
+    end_date = data['end_date']
 
     conn = get_db_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT experiment_id FROM experiments WHERE experiment_id = %s", (experiment_id,))
-    experiment = cur.fetchone()
-    if not experiment:
+    # Obter dados agregados de impressões e cliques para as variantes dentro do intervalo
+    cur.execute("""
+        SELECT
+            ed.name AS variant_name,
+            SUM(ed.impressions) AS total_impressions,
+            SUM(ed.clicks) AS total_clicks,
+            SUM(ed.impressions) - SUM(ed.clicks) AS total_non_clicks
+        FROM
+            experiment_data ed
+        WHERE
+            ed.name IN %s
+            AND ed.timestamp BETWEEN %s AND %s
+        GROUP BY ed.name;
+    """, (tuple(variant_names), start_date, end_date))
+
+    results = cur.fetchall()
+
+    if not results:
         cur.close()
         conn.close()
-        return jsonify({"error": "Experiment not found"}), 404
+        return jsonify({"error": "No data found for the specified variants and date range"}), 404
 
-    # Calcular as alocações utilizando o algoritmo MAB
-    allocations = calculate_allocation(experiment_id)
+    samples = []
+    for row in results:
+        variant_name, impressions, clicks, non_clicks = row
+        alpha = clicks + 1
+        beta_param = non_clicks + 1
+        sample = np.random.beta(alpha, beta_param)
+        samples.append((variant_name, sample))
 
-    if not allocations:
-        cur.close()
-        conn.close()
-        return jsonify({"error": "No data available to calculate allocations"}), 400
+    total = sum(sample[1] for sample in samples)
+    allocations = {variant_name: round((sample / total) * 100, 2) for variant_name, sample in samples}
 
+
+    # Inserir as alocações na tabela allocations
+    allocation_date = datetime.now()
     try:
-        allocation_date = datetime.utcnow()
-        for name, allocation_percentage in allocations.items():
+        for variant_name, allocation_percentage in allocations.items():
             cur.execute("""
-                INSERT INTO allocations (experiment_id, allocation_date, allocation_percentage)
-                VALUES (%s, %s, %s)
-            """, (experiment_id, allocation_date, allocation_percentage))
+                INSERT INTO allocations (allocation_date, variant_name, allocation_percentage, start_date, end_date)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (allocation_date, variant_name, allocation_percentage, start_date, end_date))
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -264,47 +138,54 @@ def save_allocations():
     cur.close()
     conn.close()
 
-    allocation_list = [{"name": name, "allocation_percentage": allocation_percentage} for name, allocation_percentage in allocations.items()]
-
     return jsonify({
         "message": "Allocations calculated and saved successfully",
-        "experiment_id": experiment_id,
         "allocation_date": allocation_date.strftime('%Y-%m-%d %H:%M:%S'),
-        "allocations": allocation_list
+        "allocations": allocations,
+        "start_date": start_date,
+        "end_date": end_date
     }), 201
 
-@main.route('/allocations/<int:experiment_id>', methods=['GET'])
-def get_allocations(experiment_id):
+@main.route('/allocations', methods=['GET'])
+def get_allocations():
     conn = get_db_connection()
     cur = conn.cursor()
 
+    # Obter a data mais recente de alocação
     cur.execute("""
-        SELECT MAX(allocation_date) FROM allocations
-        WHERE experiment_id = %s
-    """, (experiment_id,))
-    result = cur.fetchone()
-    latest_date = result[0]
+        SELECT MAX(allocation_date) FROM allocations;
+    """)
+    latest_date = cur.fetchone()[0]
 
     if not latest_date:
         cur.close()
         conn.close()
-        return jsonify({"error": "No allocations found for this experiment"}), 404
+        return jsonify({"error": "No allocations found"}), 404
 
+    # Obter as alocações mais recentes junto com start_date e end_date
     cur.execute("""
-        SELECT allocation_percentage
+        SELECT variant_name, allocation_percentage, start_date, end_date
         FROM allocations
-        WHERE experiment_id = %s AND allocation_date = %s
-    """, (experiment_id, latest_date))
+        WHERE allocation_date = %s;
+    """, (latest_date,))
 
     allocations = cur.fetchall()
     cur.close()
     conn.close()
 
-    allocation_list = [{"allocation_percentage": float(row[0])} for row in allocations]
+    allocation_list = [
+        {
+            "variant_name": row[0],
+            "allocation_percentage": float(row[1]),
+            "start_date": row[2].strftime('%Y-%m-%d'),
+            "end_date": row[3].strftime('%Y-%m-%d')
+        }
+        for row in allocations
+    ]
 
     return jsonify({
-        "experiment_id": experiment_id,
         "allocation_date": latest_date.strftime('%Y-%m-%d %H:%M:%S'),
         "allocations": allocation_list
     }), 200
+
 

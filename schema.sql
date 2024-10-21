@@ -1,34 +1,18 @@
-/*TABELAS INPUT */
-
-/* Armazena informações sobre cada experimento que você está conduzindo.*/
-CREATE TABLE IF NOT EXISTS experiments (
-    experiment_id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    start_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    end_date TIMESTAMP NULL
-);
-
-/* Armazena as diferentes variantes (ou "braços" no contexto MAB) de cada experimento.*/
-CREATE TABLE IF NOT EXISTS variants (
-    experiment_id INTEGER NOT NULL REFERENCES experiments(experiment_id),
-    name VARCHAR(50) NOT NULL,
-    UNIQUE (experiment_id, name)
-);
-
+/* Tabela para armazenar os dados de impressões e cliques */
 CREATE TABLE IF NOT EXISTS experiment_data (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    timestamp TIMESTAMP NOT NULL,
-    impressions INTEGER NOT NULL,
-    clicks INTEGER NOT NULL
+    name VARCHAR(50) NOT NULL,          -- Nome da variante
+    timestamp TIMESTAMP NOT NULL,       -- Quando os dados foram registrados
+    impressions INTEGER NOT NULL,       -- Número de impressões
+    clicks INTEGER NOT NULL             -- Número de cliques
 );
 
-/*TABELAS OUTPUT */ 
-
-/* Armazena os resultados de alocação de tráfego para cada experimento em um determinado momento. */
+/* Tabela para armazenar os resultados de alocação e informacoes do experimento */
 CREATE TABLE IF NOT EXISTS allocations (
     allocation_id SERIAL PRIMARY KEY,
-    experiment_id INTEGER NOT NULL REFERENCES experiments(experiment_id),
-    allocation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    allocation_percentage NUMERIC(5, 2) NOT NULL
+    allocation_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- Data da alocação
+    variant_name VARCHAR(50) NOT NULL,      -- Nome da variante
+    allocation_percentage NUMERIC(5, 2) NOT NULL,  -- Percentual de tráfego alocado
+    start_date TIMESTAMP NOT NULL,          -- Data de início do cálculo da alocação
+    end_date TIMESTAMP NOT NULL             -- Data de fim do cálculo da alocação
 );

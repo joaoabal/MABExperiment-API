@@ -3,47 +3,45 @@
 
 This project utilizes **Docker**, **RestfulAPI**, **SQL Database** and **MAB Algorithm**  for data transformation and analysis. The following instructions will guide you through setting up your environment and running the project.
 
-
-
-### Estrutura do Projeto
+### Project Structure
 
 ```bash
+
 MABExperiment-API/
 ├── app/
-│   ├── app.py              # Arquivo principal da aplicação Flask
-│   ├── routes.py           # Rotas que definem os endpoints da API
-│   ├── config.py           # Configurações da aplicação, incluindo conexões de banco de dados
-│   └── __init__.py         # Inicialização da aplicação Flask
-├── data_input.py           # Script que insere dados no banco de dados para os experimentos
-├── docker-compose.yml      # Arquivo de configuração Docker para a aplicação e PostgreSQL
-├── Dockerfile              # Dockerfile para construir a imagem da API
-├── requirements.txt        # Dependências do projeto
-└── schema.sql              # Script SQL para criar as tabelas no banco de dados
+│   ├── app.py              # Main Flask application file
+│   ├── routes.py           # Routes defining the API endpoints
+│   ├── config.py           # Application configurations, including database connections
+│   └── __init__.py         # Initialization of the Flask application
+├── data_input.py           # Script that inserts data into the database for the experiments
+├── docker-compose.yml      # Docker configuration file for the application and PostgreSQL
+├── Dockerfile              # Dockerfile to build the API image
+├── requirements.txt        # Project dependencies
+└── schema.sql              # SQL script to create the database tables
+
 ```
 
-O fluxograma abaixo ilustra o fluxo de dados entre os componentes da API MABExperiment:
+The flowchart below illustrates the data flow between the components of the MABExperiment API:
 
 
 ![Fluxograma do MABExperiment-API](./fluxograma.png)
 
 
-### Endpoints da API
+### API Endpoints 
 
-Aqui estão os principais endpoints da API:
+Here are the main API endpoints:
 
-- `POST /experiments`: Cria um novo experimento.
-- `POST /experiments/<experiment_id>/variants`: Adiciona variantes ao experimento.
-- `POST /experiment_data`: Insere dados de impressões e cliques para uma variante.
-- `POST /allocations`: Calcula e salva a alocação de tráfego entre as variantes.
-- `GET /allocations/<experiment_id>`: Retorna as alocações mais recentes para um experimento.
+- `POST /experiment_data`: Inserts impression and click data for a control page and variant page.
+- `POST /allocations`: Calculates and saves traffic allocation between the variants.
+- `GET /allocations`: Retrieves the most recent allocations for an experiment.
 
-Você pode utilizar ferramentas como **Postman** ou **cURL** para interagir com esses endpoints.
+You can use tools like Postman or cURL to interact with these endpoints.
 
-### Inserindo Dados no Banco com `data_input.py`
+### Inserting Data into the Database with `data_input.py`
 
-O script `data_input.py` é utilizado para inserir dados de variantes em um experimento específico. Ele gera registros aleatórios de impressões e cliques, que são enviados para o banco de dados via API.
+The data_input.py script is used to insert data for variants in a specific experiment. It generates random records for impressions and clicks, which are sent to the database via API.
 
-Para executá-lo, basta rodar o seguinte comando:
+To run the script, simply use the following command:
 
 ```bash
 python data_input.py
@@ -74,7 +72,7 @@ Once Docker is installed, follow these steps to set up your **MABExperiment-API*
 
 Start by cloning the repository to your local machine:
 ```bash
-git clone https://github.com/your-repo/MABExperiment-API.git
+git clone git@github.com:joaoabal/MABExperiment-API.git
 cd MABExperiment-API
 ```
 
@@ -107,8 +105,6 @@ Database: mab_db
 Username: postgres
 Password: password
 ```
-----------------------------
-
 
 
 ### 3. Running MABExperiment-API in Docker
@@ -125,15 +121,6 @@ sudo docker-compose up --build
 
 This command will start both the dbt container and the PostgreSQL container as specified in the `docker-compose.yml`.
 
----- FALAR SOBRE MIGRATION -> foi atumatizada.
-
-sudo docker-compose exec mab-api flask db init
-sudo docker-compose exec mab-api flask db migrate -m "Initial migration."
-
----- falar sobre data_input.py que insere os dados no banco
-
----- falar sobre os endpoints
-
 ### 4. Additional commands
 
 #### Stopping containers
@@ -141,7 +128,7 @@ To stop the running containers, execute:
 
 ```bash
 sudo docker-compose down
-sudo docker volume rm mab-api_postgres_data
+sudo docker volume rm mabexperiment-api_postgres_data
 ```
 
 #### Rebuilding containers
