@@ -18,6 +18,10 @@ time_interval = timedelta(minutes=60)  # Intervalo de tempo entre os registros
 variant_names = ['A', 'B', 'C', 'D']
 num_records_per_variant = 5000  # Número de registros por variante
 
+# Intervalo específico para a variante 'B' ter um CTR maior
+high_ctr_start = start_date + timedelta(days=30)  # A partir de 30 dias atrás
+high_ctr_end = high_ctr_start + timedelta(days=15)  # Até 15 dias depois (30 a 45 dias atrás)
+
 # Lista para armazenar todos os registros
 data = []
 
@@ -25,9 +29,16 @@ data = []
 for variant_name in variant_names:
     timestamp = start_time
     for _ in range(num_records_per_variant):
-        # Gerar valores aleatórios para impressões e cliques
+        # Gerar valores aleatórios para impressões
         impressions = random.randint(50, 200)
-        clicks = random.randint(0, impressions)  # Cliques não podem exceder impressões
+
+        # Se for a variante "B" dentro do intervalo definido, aumentar o CTR
+        if variant_name == 'B' and high_ctr_start <= timestamp <= high_ctr_end:
+            # Aumentar o CTR para "B" nesse intervalo (maior chance de cliques)
+            clicks = random.randint(int(0.7 * impressions), impressions)  # CTR mais alto (70% a 100%)
+        else:
+            # CTR normal para outras variantes ou fora do intervalo
+            clicks = random.randint(0, impressions)  # CTR normal
 
         # Criar o registro
         record = {

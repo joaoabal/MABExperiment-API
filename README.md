@@ -12,12 +12,15 @@ MABExperiment-API/
 │   ├── app.py              # Main Flask application file
 │   ├── routes.py           # Routes defining the API endpoints
 │   ├── config.py           # Application configurations, including database connections
+│   ├── db_connection.py    # Database connection function
 │   └── __init__.py         # Initialization of the Flask application
 ├── data_input.py           # Script that inserts data into the database for the experiments
 ├── docker-compose.yml      # Docker configuration file for the application and PostgreSQL
 ├── Dockerfile              # Dockerfile to build the API image
 ├── requirements.txt        # Project dependencies
 └── schema.sql              # SQL script to create the database tables
+└── add_experiment_data.json   # JSON example for POST experiment data
+└── create_allocation.json  # JSON example for POST allocation
 
 ```
 
